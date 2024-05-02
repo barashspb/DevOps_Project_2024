@@ -1,0 +1,37 @@
+#использование базового образа убунты
+FROM ubuntu:22.04
+
+#установка необходимых программ с помощью apt-get
+RUN apt-get update && apt-get install -y \
+    python3.9=3.9.17~22.04 \
+    python3-pip=22.0.2+dfsg-1ubuntu0.4 \
+    git=1:2.34.1-1ubuntu1.10 \
+    openssh-server=1:8.9p1-3ubuntu0.7 
+
+#установка необходимых пакетов и зависимостей с помощью pip
+RUN pip install pylint==3.0.0 \
+    black==23.1.0 \
+    requests==2.31.0 \
+    pytest==7.4.0 
+
+#добавление env-переменной для пароля SSH
+ARG SSH_PASSWORD
+ENV SSH_PASSWORD=$SSH_PASSWORD
+
+#настройка SSH
+RUN mkdir /var/run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    echo "root:$SSH_PASSWORD" | chpasswd
+
+#клонирование репозитория из GitHub
+RUN git clone https://github.com/moevm/devops-examples.git
+
+#указание рабочей директории
+WORKDIR /devops-examples/EXAMPLE_APP
+
+#копирование файлов проекта (всех тестов) в текущую директорию
+COPY . .
+
+#команда, которая будет выполнена при запуске контейнера на основе этого образа
+#запуск SSH и стандартного Python сервера
+ENTRYPOINT ["bash", "-c", "service ssh start && python3 -m http.server 3000"]

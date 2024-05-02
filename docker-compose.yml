@@ -1,0 +1,38 @@
+#версия docker-compose
+version: '3.8'
+
+services:
+  app:
+    #название контейнера
+    container_name: "docker_app"
+    #сборка контейнера приложения
+    build:
+      context: app
+      #название Docker файла
+      dockerfile: Dockerfile_app
+    #ограничение на кол-во процессов
+    ulimits:  
+      nproc: 15
+    
+  test:
+    #название контейнера
+    container_name: "docker_test"
+    #подключение файла .env для переменных окружения
+    env_file:
+      - .env
+    #проброс портов для SSH и веб-сервера
+    ports:
+      - "127.0.0.1:${SSH_PORT}:22"
+      - "127.0.0.1:${WEB_SERVER_PORT}:3000"
+    #сборка контейнера для тестов с передачей аргумента SSH_PASSWORD
+    build:
+      context: tester
+      dockerfile: Dockerfile_tester
+      args:
+        SSH_PASSWORD: "${SSH_PASSWORD}"
+    #зависимость от контейнера app
+    depends_on:
+      - app
+    #ограничение на кол-во процессов
+    ulimits:  
+      nproc: 15
